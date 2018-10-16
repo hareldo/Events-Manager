@@ -1,0 +1,319 @@
+
+<html>
+
+<style>
+	html,
+	body {
+	  height: 100%;
+	}
+	body {
+	  display: grid;
+	  -webkit-text-size-adjust: 100%;
+	  -webkit-font-smoothing: antialiased;
+	  box-sizing: border-box;
+	  font-size:10px;
+	  font-family: helvetica;
+
+	}
+	.inp {
+	  position: relative;
+	  width: 100%;
+	  max-width: 280px;
+	}
+	.inp .label1 {
+	  position: absolute;
+	  top: 12px;
+	  left: 0;
+	  font-size: 16px;
+	  color: #9098a9;
+	  font-weight: 500;
+	  transform-origin: 0 0;
+	  transition: all 0.2s ease;
+	}
+	}
+	.inp .border {
+	  position: absolute;
+	  bottom: 0;
+	  left: 0;
+	  height: 2px;
+	  width: 100%;
+	  background: #07f;
+	  transform: scaleX(0);
+	  transform-origin: 0 0;
+	  transition: all 0.15s ease;
+	}
+	.inp input {
+	  -webkit-appearance: none;
+	  width: 100%;
+	  border: 0;
+	  font-family: inherit;
+	  padding: 12px 0;
+	  height: 48px;
+	  font-size: 16px;
+	  font-weight: 500;
+	  border-bottom: 2px solid #c8ccd4;
+	  background: none;
+	  border-radius: 0;
+	  color: #223254;
+	  transition: all 0.15s ease;
+	}
+	.inp input:hover {
+	  background: rgba(34,50,84,0.03);
+	}
+	.inp input:not(:placeholder-shown) + span {
+	  color: #5a667f;
+	  transform: translateY(-26px) scale(0.75);
+	}
+	.inp input:focus {
+	  background: none;
+	  outline: none;
+	}
+	.inp input:focus + span {
+	  color: #07f;
+	  transform: translateY(-26px) scale(0.75);
+	}
+	.inp input:focus + span + .border {
+	  transform: scaleX(1);
+	}
+	.note
+	{
+		width:200px;
+		background-color: gray;
+		border-style: solid;
+		border-width: 1px;
+		border-color: black;
+		padding:10px;
+		margin: 10px;
+	}
+	.collapsible {
+	  background-color: #777;
+	  color: white;
+	  cursor: pointer;
+	  padding: 18px;
+	  width: 100%;
+	  border: none;
+	  text-align: left;
+	  outline: none;
+	  font-size: 15px;
+	}
+
+	.active, .collapsible:hover {
+	  background-color: #555;
+	}
+
+	.content {
+	  padding: 0 18px;
+	  max-height: 0;
+	  overflow: hidden;
+	  transition: max-height 0.2s ease-out;
+	  background-color: #f1f1f1;
+	}
+	
+	.btn {
+    background-color: DodgerBlue; /* Blue background */
+    border: none; /* Remove borders */
+    color: white; /* White text */
+    padding: 12px 16px; /* Some padding */
+    font-size: 16px; /* Set a font size */
+    cursor: pointer; /* Mouse pointer on hover */
+	}
+
+	/* Darker background on mouse-over */
+	.btn:hover {
+		background-color: RoyalBlue;
+	}
+
+</style>
+
+
+<body>
+	<table style = "width:100%">
+	<tr>
+		<td style = "width:60%">
+			<h2>Events List:</h2>
+			<input type="text" id="searchBox" name="searchBox"/><br><br><br>
+			<div id="dataTransfer">
+			</div>
+		</td>
+		<td>
+			<div style="position: absolute;top: 50px;">
+			<label for="inp" class="inp">
+				<input type="text" id="title" placeholder="&nbsp;">
+				<span class="label1">Title</span>
+				<span class="border"></span>
+			</label>
+			<label for="inp" class="inp">
+				<input type="text" id="date" placeholder="&nbsp;">
+				<span class="label1">Date</span>
+				<span class="border"></span>
+			</label>
+			<label for="inp" class="inp">
+				<input type="text" id="place" placeholder="&nbsp;">
+				<span class="label1">Place</span>
+				<span class="border"></span>
+			</label>
+			<label for="inp" class="inp">
+				<input type="text" id="details" placeholder="&nbsp;">
+				<span class="label1">Details</span>
+				<span class="border"></span>
+			</label>
+			<input type="button" value="New" id="addOrSaveButton" onclick="newOrEdit()"/>
+			<input type="button" value="Cancel" id="cancelEdit" onclick="resetForm()" style="visibility: hidden;"/>
+			</div>
+		</td>
+	</tr></table>
+</body>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+
+<script>
+
+
+var thisId = -1;
+
+$( document ).ready(function() 
+{
+	
+	var dataTransfer = $( "#dataTransfer" )
+	notesField = $("input#note")
+	
+	searchBox = $("#searchBox")
+	searchBox.bind("input", function()
+	{
+		var words = $(this).val();
+		getData(words);
+	});
+
+	pre = $("<pre id='data'>").appendTo(dataTransfer)
+	pre = $("<div id='cooked'>").appendTo(dataTransfer)
+	getData("")
+
+})
+
+
+function showEvent(id){
+	var content = document.getElementById("contentDiv" + id);
+	if (content.style.maxHeight){
+		content.style.maxHeight = null;
+	} else {
+		content.style.maxHeight = content.scrollHeight + "px";
+	} 
+}
+
+function getData(searchWord)
+{
+	var url = "/data?" + searchWord
+	var titles = ['place','date']
+	eventsDiv = $("#dataTransfer")
+	eventsDiv.empty()
+	var i = 0;
+	$.getJSON( url, function( data ) {
+		$.each(data ,function(outerKey, outerVal) {
+			button = $("<button class='collapsible' onclick='showEvent(" + i.toString() + ")'>").appendTo( eventsDiv )
+			elementDiv = $("<div class='content' id ='contentDiv" + i.toString() + "'><br>").appendTo( eventsDiv );
+			$.each(outerVal, function(key, val) {
+				if (key == "title"){
+					button.text(val)
+				}
+				else{
+					elementDiv.append( "<u>" + key + "</u> : " + val + "<br><br>" )
+				}
+			});
+			elementDiv.append('<button onClick="remove(' + outerKey + ')"><i class="fa fa-trash"></i></button>')
+			elementDiv.append('<input type="button" onClick="getIdForEdit(' + outerKey + ')" value="Edit" class="editBut">')
+			elementDiv.append('<button onClick="openFoler(' + outerKey + ')"><i class="fa fa-folder"></i> Folder</button>')
+			i += 1;
+		});
+	});
+}
+
+
+function newOrEdit()
+{
+	if ($("#addOrSaveButton").val() == "New"){
+		if ($("#title").val() != ""){
+			postEvent();
+		}
+	}
+	else{
+		edit(thisId);
+	}
+	resetForm();
+}
+
+function getIdForEdit(id)
+{
+	var url = "/getid?" + id
+	thisId = id;
+	resetForm();
+	if ($("#addOrSaveButton").val() == "New"){
+		$("#cancelEdit").css("visibility", "visible");
+		$("#addOrSaveButton").val("Save");
+	}
+	$.getJSON( url, function( data ) {
+		$.each(data ,function(key, val) {
+				$("#" + key).val(val);
+		});
+	});
+}
+
+
+function resetForm()
+{
+	$("#title").val("");
+	$("#date").val("");
+	$("#place").val("");
+	$("#details").val("");
+	$("#addOrSaveButton").val("New");
+	$("#cancelEdit").css("visibility", "hidden");
+}
+
+function postEvent()
+{
+	var data = {};
+	data["title"] = $("#title").val();
+	data["date"] = $("#date").val();
+	data["place"] = $("#place").val();
+	data["details"] = $("#details").val();
+
+	var url = "/post";
+	$.post( url, data );
+	getData("");
+}
+
+function remove( id )
+{
+	var data = {}
+	data["id"] = id
+	var url = "/remove"
+	$.post( url, data )
+	getData("");
+}
+
+
+function edit( id )
+{
+	var data = {};
+	data["title"] = $("#title").val();
+	data["date"] = $("#date").val();
+	data["place"] = $("#place").val();
+	data["details"] = $("#details").val();
+
+	var url = "/edit?" + id;
+	$.post( url, data );
+	getData("");
+}
+
+function openFolder(id)
+{
+	var data = {}
+	data["id"] = id
+	var url = "/openDir"
+	$.post( url, data )
+	getData("");
+}
+
+</script>
+
+</html>
